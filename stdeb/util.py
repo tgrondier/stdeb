@@ -178,6 +178,7 @@ stdeb_cfg_options = [
     ('setup-env-vars=',None,'environment variables passed to setup.py'),
     ('udev-rules=',None,'file with rules to install to udev'),
     ('python2-depends-name=',None,'Python 2 Debian package name used in ${python:Depends}'),
+    ('links=',None,'debian/<package>.links')
     ]
 
 stdeb_cmd_bool_opts = [
@@ -1187,6 +1188,12 @@ class DebianInfo:
         else:
             self.control_py3_stanza = ''
 
+        links = ''.join(parse_vals(cfg,module_name,'links'))
+        if len(links):
+            self.links = links
+        else:
+            self.links = ''
+
         self.with_python2 = with_python2
         self.with_python3 = with_python3
         self.no_python2_scripts = no_python2_scripts
@@ -1387,6 +1394,12 @@ def build_dsc(debinfo,
     fd = open( os.path.join(debian_dir,'source','options'), mode='w')
     fd.write('extend-diff-ignore="\.egg-info$"')
     fd.close()
+
+    #    K. debian/<package>.links
+    if debinfo.links:
+        fd = open(os.path.join(debian_dir,'%s.links'%debinfo.package), mode='w')
+        fd.write(LINKS_FILE%debinfo.__dict__)
+        fd.close()
 
     if debian_dir_only:
         return
@@ -1608,4 +1621,7 @@ RULES_BINARY_INDEP_TARGET = """
 binary-indep: build
 %(dh_binary_indep_lines)s
 %(dh_installmime_indep_line)s
+"""
+
+LINKS_FILE = """%(links)s
 """
