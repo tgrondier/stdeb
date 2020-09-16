@@ -178,7 +178,7 @@ stdeb_cfg_options = [
     ('setup-env-vars=',None,'environment variables passed to setup.py'),
     ('udev-rules=',None,'file with rules to install to udev'),
     ('python2-depends-name=',None,'Python 2 Debian package name used in ${python:Depends}'),
-    ('links=',None,'debian/<package>.links')
+    ('links=',None,'Override dh_link')
     ]
 
 stdeb_cmd_bool_opts = [
@@ -1182,11 +1182,11 @@ class DebianInfo:
         else:
             self.control_py3_stanza = ''
 
-        links = ''.join(parse_vals(cfg,module_name,'links'))
+        links = ' '.join(parse_vals(cfg,module_name,'links'))
         if len(links):
-            self.links = links
+            self.override_dh_link = RULES_OVERRIDE_LINKS%links
         else:
-            self.links = ''
+            self.override_dh_link = ''
 
         self.with_python2 = with_python2
         self.with_python3 = with_python3
@@ -1389,12 +1389,6 @@ def build_dsc(debinfo,
     fd.write('extend-diff-ignore="\.egg-info$"')
     fd.close()
 
-    #    K. debian/<package>.links
-    if debinfo.links:
-        fd = open(os.path.join(debian_dir,'%s.links'%debinfo.package), mode='w')
-        fd.write(LINKS_FILE%debinfo.__dict__)
-        fd.close()
-
     if debian_dir_only:
         return
 
@@ -1547,6 +1541,8 @@ RULES_MAIN = """\
 
 %(override_dh_python3)s
 
+%(override_dh_link)s
+
 %(binary_target_lines)s
 """
 
@@ -1586,6 +1582,11 @@ override_dh_python3:
 %(scripts)s
 """
 
+RULES_OVERRIDE_LINKS = """
+override_dh_link:
+        dh_link %(links)s
+"""
+
 RULES_BINARY_TARGET = """
 binary: binary-arch binary-indep
 """
@@ -1603,7 +1604,4 @@ RULES_BINARY_INDEP_TARGET = """
 binary-indep: build
 %(dh_binary_indep_lines)s
 %(dh_installmime_indep_line)s
-"""
-
-LINKS_FILE = """%(links)s
 """
